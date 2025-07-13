@@ -70,32 +70,44 @@
         }
 
         .cart-icon {
-            position: relative;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 0.8rem;
-            border-radius: 50%;
-            text-decoration: none;
-            transition: transform 0.3s ease;
-        }
+    position: relative;
+    text-decoration: none;
+    transition: transform 0.3s ease;
+    display: inline-block; /* Essential for containing the absolutely positioned count */
+}
 
-        .cart-icon:hover {
-            transform: scale(1.1);
-        }
+.cart-icon:hover {
+    transform: scale(1.1);
+}
 
-        .cart-count {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #ff4757;
-            color: white;
-            font-size: 0.8rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 50%;
-            min-width: 20px;
-            text-align: center;
-        }
+.cart-icon svg {
+    /* Set the desired size for your SVG icon */
+    width: 28px; /* Adjusted example size, you'll fine-tune this */
+    height: 28px; /* Adjusted example size, you'll fine-tune this */
+    display: block; /* Ensures the SVG behaves as a block element for sizing */
+}
 
+.cart-count {
+    position: absolute;
+    /* Adjust these values to fine-tune the position relative to your SVG size */
+    top: -5px;   /* Example: move it slightly up */
+    right: -5px; /* Example: move it slightly to the right */
+
+    background: #ff4757;
+    color: white;
+    font-size: 0.75rem; /* Slightly smaller font size often looks better for counts */
+    padding: 0.1rem 0.4rem; /* Adjusted padding for a smaller badge */
+    border-radius: 50%;
+    min-width: 18px; /* Adjusted min-width for a smaller badge */
+    height: 18px; /* Give it a fixed height to make it more circular */
+    display: flex; /* Use flexbox to perfectly center the number */
+    align-items: center;
+    justify-content: center;
+    text-align: center; /* Fallback for older browsers/display issues */
+    line-height: 1; /* Helps with vertical alignment in some cases */
+    z-index: 1; /* Ensure count appears above the SVG */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
         /* Main Content */
         .main-content {
             margin-top: 100px;
@@ -633,7 +645,13 @@
                     <li><a href="#contact">Contact</a></li>
                 </ul>
                 <a href="#cart" class="cart-icon">
-                    🛒
+                    <svg xmlns="http://www.w3.org/2000/svg" width="430" height="430" fill="none" viewBox="0 0 430 430">
+                        <g stroke-miterlimit="14.8" stroke-width="12">
+                            <path stroke="#121331" stroke-linecap="round" stroke-linejoin="round" d="M127.012 275.95s-7.1 1.6-10.9 6.3c-6 7.4-5.8 19.6 15.1 19.6h175.3"/>
+                            <path stroke="#08a88a" d="M144.112 301.95c15.3 0 27.8 12.4 27.8 27.8 0 15.3-12.4 27.8-27.8 27.8s-27.8-12.4-27.8-27.8c.1-15.4 12.5-27.8 27.8-27.8Zm164.2 0c15.3 0 27.8 12.4 27.8 27.8 0 15.3-12.4 27.8-27.8 27.8-15.3 0-27.8-12.4-27.8-27.8.1-15.4 12.5-27.8 27.8-27.8Z"/>
+                            <path stroke="#121331" stroke-linecap="round" stroke-linejoin="round" d="M41.912 72.45h25.4c14 0 28.2 16.4 31.6 36.5l28.1 167m-28-166.5 248.2.1h39.3c1.3 0 1.9 1.4 1.4 3.1s-5.5 19-11.2 38.6l-18.8 64.7c-5.7 19.6-26.8 37.4-47.1 39.7l-145.7 16.6c-20.3 2.3-34.8 2.1-38.1 3.7 0 0-7.1 1.6-10.9 6.3"/>
+                        </g>
+                    </svg>
                     <span class="cart-count">0</span>
                 </a>
             </nav>

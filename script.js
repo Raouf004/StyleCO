@@ -4,10 +4,11 @@
 const CONFIG = {
     navbarScrollThreshold: 50,
     notificationDuration: 4000,
-    swipeThreshold: 50,
-    heroParallaxRate: -0.5,
+    swipeThreshold: 50, // For detecting significant vertical swipes
+    heroParallaxRate: -0.2, // Adjusted for a subtler effect
     productHoverScale: 1.02,
-    productHoverTranslate: -10
+    productHoverTranslate: -10,
+    carouselAutoPlayInterval: 5000 // milliseconds
 };
 
 // Product ID mapping for navigation
@@ -28,7 +29,8 @@ class EcommerceApp {
     constructor() {
         this.elements = {};
         this.observers = {};
-        this.isScrolling = false;
+        this.slideIndex = 1; // For carousel
+        this.carouselAutoPlayIntervalId = null;
         this.touchStartY = 0;
         this.touchEndY = 0;
         
@@ -41,6 +43,10 @@ class EcommerceApp {
         this.setupObservers();
         this.addNotificationStyles();
         this.initializeAnimations();
+        this.setupImageCarousel(); // Initialize the carousel here
+        
+        // Finalize page load animation
+        document.body.classList.add('page-loaded'); // Add class to trigger CSS fade-in
     }
 
     cacheElements() {
@@ -55,8 +61,14 @@ class EcommerceApp {
             productCards: document.querySelectorAll('.product-card'),
             socialLinks: document.querySelectorAll('.social-icon'),
             hero: document.querySelector('.hero'),
-            images: document.querySelectorAll('img[loading="lazy"]'),
-            animatedElements: document.querySelectorAll('.product-card, .about-text, .footer-section')
+            lazyImages: document.querySelectorAll('img[loading="lazy"]'), // Renamed for clarity
+            animatedElements: document.querySelectorAll('.product-card, .about-text, .footer-section'),
+            
+            // Carousel specific elements
+            carouselSlides: document.getElementsByClassName("mySlides"),
+            carouselDots: document.getElementsByClassName("dot"),
+            carouselPrevBtn: document.querySelector('.hero .prev'),
+            carouselNextBtn: document.querySelector('.hero .next')
         };
     }
 
@@ -64,13 +76,13 @@ class EcommerceApp {
         // Mobile navigation
         this.setupMobileNavigation();
         
-        // Smooth scrolling
+        // Smooth scrolling for all internal anchors
         this.setupSmoothScrolling();
         
-        // CTA button
+        // CTA button action
         this.setupCtaButton();
         
-        // Newsletter form
+        // Newsletter form submission
         this.setupNewsletterForm();
         
         // Quick view buttons
@@ -82,18 +94,97 @@ class EcommerceApp {
         // Social media links
         this.setupSocialLinks();
         
-        // Scroll effects
+        // Scroll effects (navbar and hero parallax)
         this.setupScrollEffects();
         
-        // Keyboard navigation
+        // Keyboard navigation for mobile menu
         this.setupKeyboardNavigation();
         
-        // Touch support
+        // Touch support for potential swipe actions (currently logging)
         this.setupTouchSupport();
         
-        // Page load animation
-        this.setupPageLoadAnimation();
+        // Carousel event listeners
+        this.setupCarouselControls();
     }
+
+    // --- Carousel Logic ---
+    setupImageCarousel() {
+        this.showSlides(this.slideIndex);
+        this.startCarouselAutoPlay();
+
+        // Pause auto-play when user hovers over the slideshow
+        if (this.elements.hero) {
+            this.elements.hero.addEventListener('mouseenter', () => this.pauseCarouselAutoPlay());
+            this.elements.hero.addEventListener('mouseleave', () => this.startCarouselAutoPlay());
+        }
+    }
+
+    showSlides(n) {
+        let i;
+        const slides = this.elements.carouselSlides;
+        const dots = this.elements.carouselDots;
+
+        if (!slides || slides.length === 0) return;
+
+        // Loop around if we go past the last/first slide
+        if (n > slides.length) {
+            this.slideIndex = 1;
+        }
+        if (n < 1) {
+            this.slideIndex = slides.length;
+        }
+
+        // Hide all slides and deactivate all dots
+        for (i = 0; i < slides.length; i++) {
+            slides[i].style.display = "none";
+        }
+        for (i = 0; i < dots.length; i++) {
+            dots[i].classList.remove("active");
+        }
+
+        // Display the current slide and activate the corresponding dot
+        slides[this.slideIndex - 1].style.display = "block";
+        if (dots[this.slideIndex - 1]) { // Check if dot exists
+            dots[this.slideIndex - 1].classList.add("active");
+        }
+    }
+
+    plusSlides(n) {
+        this.showSlides(this.slideIndex += n);
+    }
+
+    currentSlide(n) {
+        this.showSlides(this.slideIndex = n);
+    }
+
+    startCarouselAutoPlay() {
+        this.pauseCarouselAutoPlay(); // Clear any existing interval
+        this.carouselAutoPlayIntervalId = setInterval(() => {
+            this.plusSlides(1);
+        }, CONFIG.carouselAutoPlayInterval);
+    }
+
+    pauseCarouselAutoPlay() {
+        if (this.carouselAutoPlayIntervalId) {
+            clearInterval(this.carouselAutoPlayIntervalId);
+            this.carouselAutoPlayIntervalId = null;
+        }
+    }
+
+    setupCarouselControls() {
+        if (this.elements.carouselPrevBtn) {
+            this.elements.carouselPrevBtn.addEventListener('click', () => this.plusSlides(-1));
+        }
+        if (this.elements.carouselNextBtn) {
+            this.elements.carouselNextBtn.addEventListener('click', () => this.plusSlides(1));
+        }
+        // Attach click handlers to dots dynamically since they are fixed elements in HTML
+        Array.from(this.elements.carouselDots).forEach((dot, index) => {
+            dot.addEventListener('click', () => this.currentSlide(index + 1));
+        });
+    }
+
+    // --- End Carousel Logic ---
 
     setupMobileNavigation() {
         if (!this.elements.mobileMenu || !this.elements.navMenu) return;
@@ -101,6 +192,7 @@ class EcommerceApp {
         this.elements.mobileMenu.addEventListener('click', () => {
             this.elements.mobileMenu.classList.toggle('active');
             this.elements.navMenu.classList.toggle('active');
+            document.body.classList.toggle('no-scroll'); // Optional: prevent scrolling when menu is open
         });
 
         // Close mobile menu when clicking on nav links
@@ -108,21 +200,12 @@ class EcommerceApp {
             link.addEventListener('click', () => {
                 this.elements.mobileMenu.classList.remove('active');
                 this.elements.navMenu.classList.remove('active');
+                document.body.classList.remove('no-scroll'); // Re-enable scrolling
             });
         });
     }
 
     setupSmoothScrolling() {
-        // Handle navigation links
-        this.elements.navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href');
-                this.smoothScrollToTarget(targetId);
-            });
-        });
-
-        // Handle all anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -135,7 +218,7 @@ class EcommerceApp {
     smoothScrollToTarget(targetId) {
         const targetSection = document.querySelector(targetId);
         if (targetSection) {
-            const offsetTop = targetSection.offsetTop - 70; // Account for fixed navbar
+            const offsetTop = targetSection.offsetTop - (this.elements.navbar ? this.elements.navbar.offsetHeight : 0); // Account for fixed navbar height
             window.scrollTo({
                 top: offsetTop,
                 behavior: 'smooth'
@@ -147,14 +230,7 @@ class EcommerceApp {
         if (!this.elements.ctaButton) return;
 
         this.elements.ctaButton.addEventListener('click', () => {
-            const shopSection = document.getElementById('shop');
-            if (shopSection) {
-                const offsetTop = shopSection.offsetTop - 70;
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
-            }
+            this.smoothScrollToTarget('#shop');
         });
     }
 
@@ -183,9 +259,12 @@ class EcommerceApp {
                 const productId = productIdMap[productName];
                 
                 if (productId) {
-                    window.location.href = `product-details.html?id=${productId}`;
+                    // In a real app, this would fetch product data and open a modal
+                    this.showNotification(`Loading details for ${productName}...`, 'info');
+                    // For demonstration, you might navigate or open a dummy modal
+                    // window.location.href = `product-details.html?id=${productId}`;
                 } else {
-                    this.showNotification(`Product details for ${productName} - Coming soon!`, 'info');
+                    this.showNotification(`Product details for "${productName}" - Coming soon!`, 'info');
                 }
             });
         });
@@ -193,6 +272,7 @@ class EcommerceApp {
 
     setupProductCardHovers() {
         this.elements.productCards.forEach(card => {
+            card.style.transition = 'transform 0.3s ease'; // Ensure transition property is set
             card.addEventListener('mouseenter', () => {
                 card.style.transform = `translateY(${CONFIG.productHoverTranslate}px) scale(${CONFIG.productHoverScale})`;
             });
@@ -208,7 +288,8 @@ class EcommerceApp {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const platform = link.getAttribute('aria-label');
-                this.showNotification(`${platform} link - Connect with us on social media!`, 'info');
+                this.showNotification(`Redirecting to our ${platform} page...`, 'info');
+                // In a real app, you'd navigate: window.open(link.href, '_blank');
             });
         });
     }
@@ -236,11 +317,9 @@ class EcommerceApp {
         if (!this.elements.navbar) return;
 
         if (window.scrollY > CONFIG.navbarScrollThreshold) {
-            this.elements.navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-            this.elements.navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.15)';
+            this.elements.navbar.classList.add('scrolled'); // Use class for styling
         } else {
-            this.elements.navbar.style.background = 'rgba(255, 255, 255, 0.95)';
-            this.elements.navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.1)';
+            this.elements.navbar.classList.remove('scrolled');
         }
     }
 
@@ -248,52 +327,66 @@ class EcommerceApp {
         if (!this.elements.hero) return;
 
         const scrolled = window.pageYOffset;
-        const rate = scrolled * CONFIG.heroParallaxRate;
-        this.elements.hero.style.transform = `translateY(${rate}px)`;
+        // Only apply parallax if it makes sense (e.g., hero is visible)
+        if (scrolled < this.elements.hero.offsetHeight) {
+             const rate = scrolled * CONFIG.heroParallaxRate;
+             this.elements.hero.style.transform = `translateY(${rate}px)`;
+        } else {
+            this.elements.hero.style.transform = `translateY(${this.elements.hero.offsetHeight * CONFIG.heroParallaxRate}px)`;
+        }
     }
 
     setupKeyboardNavigation() {
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.elements.navMenu.classList.contains('active')) {
+            if (e.key === 'Escape' && this.elements.navMenu && this.elements.navMenu.classList.contains('active')) {
                 this.elements.mobileMenu.classList.remove('active');
                 this.elements.navMenu.classList.remove('active');
+                document.body.classList.remove('no-scroll');
             }
         });
     }
 
     setupTouchSupport() {
+        // Only for vertical swipes for now, can be expanded for carousel
         document.addEventListener('touchstart', (e) => {
-            this.touchStartY = e.changedTouches[0].screenY;
-        });
+            this.touchStartY = e.touches[0].screenY; // Use touches[0] for first touch
+        }, { passive: true }); // Use passive listener for better scroll performance
 
         document.addEventListener('touchend', (e) => {
             this.touchEndY = e.changedTouches[0].screenY;
             this.handleSwipe();
-        });
+        }, { passive: true });
+
+        // Optional: for carousel horizontal swipe
+        // let startX, endX;
+        // const carouselContainer = document.querySelector('.slideshow-container');
+        // if(carouselContainer) {
+        //     carouselContainer.addEventListener('touchstart', (e) => {
+        //         startX = e.touches[0].clientX;
+        //     });
+        //     carouselContainer.addEventListener('touchend', (e) => {
+        //         endX = e.changedTouches[0].clientX;
+        //         const diffX = startX - endX;
+        //         if (Math.abs(diffX) > CONFIG.swipeThreshold) {
+        //             if (diffX > 0) this.plusSlides(1); // Swipe left
+        //             else this.plusSlides(-1); // Swipe right
+        //         }
+        //     });
+        // }
     }
 
     handleSwipe() {
         const diff = this.touchStartY - this.touchEndY;
         
         if (Math.abs(diff) > CONFIG.swipeThreshold) {
-            if (diff > 0) {
-                console.log('Swiped up');
-            } else {
-                console.log('Swiped down');
-            }
+            // This can be expanded to do something meaningful, e.g.,
+            // if (diff > 0) console.log('Swiped up, maybe go to next section?');
+            // else console.log('Swiped down, maybe go to previous section?');
         }
     }
 
-    setupPageLoadAnimation() {
-        window.addEventListener('load', () => {
-            document.body.style.opacity = '0';
-            document.body.style.transition = 'opacity 0.5s ease';
-            
-            setTimeout(() => {
-                document.body.style.opacity = '1';
-            }, 100);
-        });
-    }
+    // Removed setupPageLoadAnimation as it's handled by CSS and initial class
+    // in init() for a better no-flicker fade-in.
 
     setupObservers() {
         this.setupImageObserver();
@@ -301,30 +394,45 @@ class EcommerceApp {
     }
 
     setupImageObserver() {
+        if (!('IntersectionObserver' in window)) {
+            // Fallback for older browsers: just add 'loaded' class instantly
+            this.elements.lazyImages.forEach(img => img.classList.add('loaded'));
+            return;
+        }
+
         this.observers.imageObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const img = entry.target;
                     img.classList.add('loaded');
-                    this.observers.imageObserver.unobserve(img);
+                    this.observers.imageObserver.unobserve(img); // Stop observing once loaded
                 }
             });
+        }, {
+            rootMargin: '0px 0px -50px 0px', // Load images slightly before they enter view
+            threshold: 0.01 // Trigger as soon as even a tiny bit is visible
         });
 
-        this.elements.images.forEach(img => {
+        this.elements.lazyImages.forEach(img => {
             this.observers.imageObserver.observe(img);
-            img.addEventListener('load', function() {
-                this.classList.add('loaded');
-            });
         });
     }
 
     setupScrollAnimationObserver() {
+        if (!('IntersectionObserver' in window)) {
+            // Fallback: make elements visible immediately
+            this.elements.animatedElements.forEach(element => {
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            });
+            return;
+        }
+
         this.observers.scrollObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
+                    entry.target.classList.add('animate-in'); // Use a CSS class for animation
+                    this.observers.scrollObserver.unobserve(entry.target); // Animate once
                 }
             });
         }, {
@@ -333,18 +441,21 @@ class EcommerceApp {
         });
 
         this.elements.animatedElements.forEach(element => {
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(30px)';
-            element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            // Set initial state for animation via CSS, add a class here if needed
+            // For now, assume CSS handles initial opacity:0 and transform:translateY(30px)
             this.observers.scrollObserver.observe(element);
         });
     }
 
     initializeAnimations() {
-        // Initial setup for animations
+        // Ensure product cards have transitions for hover effects
         this.elements.productCards.forEach(card => {
             card.style.transition = 'transform 0.3s ease';
         });
+        // You might want to initially hide scroll-animated elements in CSS
+        // and let IntersectionObserver reveal them using a class.
+        // Example: .animated-element { opacity: 0; transform: translateY(30px); transition: ...; }
+        //          .animated-element.animate-in { opacity: 1; transform: translateY(0); }
     }
 
     addNotificationStyles() {
@@ -375,7 +486,7 @@ class EcommerceApp {
                 gap: 10px;
                 max-width: 300px;
                 font-weight: 500;
-                animation: slideInRight 0.3s ease;
+                animation: slideInRight 0.3s ease forwards; /* forwards to keep final state */
             }
             .notification-success { background: #27ae60; }
             .notification-error { background: #e74c3c; }
@@ -394,13 +505,18 @@ class EcommerceApp {
     }
 
     showNotification(message, type = 'info') {
-        // Remove existing notifications
+        // Remove existing notifications smoothly
         const existingNotification = document.querySelector('.notification');
         if (existingNotification) {
-            existingNotification.remove();
+            this.removeNotification(existingNotification, () => {
+                this._createAndShowNewNotification(message, type);
+            });
+        } else {
+            this._createAndShowNewNotification(message, type);
         }
+    }
 
-        // Create notification element
+    _createAndShowNewNotification(message, type) {
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.innerHTML = `
@@ -408,16 +524,13 @@ class EcommerceApp {
             <button class="notification-close" aria-label="Close notification">&times;</button>
         `;
 
-        // Add to page
         document.body.appendChild(notification);
 
-        // Close button functionality
         const closeButton = notification.querySelector('.notification-close');
         closeButton.addEventListener('click', () => {
             this.removeNotification(notification);
         });
 
-        // Auto remove after specified duration
         setTimeout(() => {
             if (notification.parentNode) {
                 this.removeNotification(notification);
@@ -425,12 +538,13 @@ class EcommerceApp {
         }, CONFIG.notificationDuration);
     }
 
-    removeNotification(notification) {
-        notification.style.animation = 'slideOutRight 0.3s ease';
+    removeNotification(notification, callback = () => {}) {
+        notification.style.animation = 'slideOutRight 0.3s ease forwards';
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.remove();
             }
+            callback();
         }, 300);
     }
 
@@ -450,10 +564,11 @@ class EcommerceApp {
 
     // Cleanup method
     destroy() {
-        // Remove all event listeners and observers
         Object.values(this.observers).forEach(observer => {
             observer.disconnect();
         });
+        this.pauseCarouselAutoPlay(); // Stop carousel autoplay
+        // More cleanup for event listeners if necessary, but typically for SPA unmounting
     }
 }
 
@@ -461,8 +576,3 @@ class EcommerceApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.ecommerceApp = new EcommerceApp();
 });
-
-// Export for use in other modules if needed
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = EcommerceApp;
-}
