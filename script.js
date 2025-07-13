@@ -576,3 +576,186 @@ class EcommerceApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.ecommerceApp = new EcommerceApp();
 });
+// Theme Toggler
+const themeToggle = document.getElementById('theme-toggle');
+const body = document.body;
+
+// Function to set the theme
+function setTheme(isDarkMode) {
+    if (isDarkMode) {
+        body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+// Check for saved theme preference on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        setTheme(true);
+    } else if (savedTheme === 'light') {
+        setTheme(false);
+    } else {
+        // Default to system preference if no theme is saved
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark);
+    }
+});
+
+// Add event listener to the toggle button
+themeToggle.addEventListener('click', () => {
+    const isDarkMode = body.classList.contains('dark-mode');
+    setTheme(!isDarkMode);
+});
+
+// Mobile menu toggle
+const mobileMenu = document.getElementById('mobile-menu');
+const navMenu = document.querySelector('.nav-menu');
+
+mobileMenu.addEventListener('click', () => {
+    mobileMenu.classList.toggle('active');
+    navMenu.classList.toggle('active');
+});
+
+// Close mobile menu when a nav link is clicked
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+        mobileMenu.classList.remove('active');
+        navMenu.classList.remove('active');
+    });
+});
+
+// Slideshow
+let slideIndex = 1;
+showSlides(slideIndex);
+
+function plusSlides(n) {
+    showSlides(slideIndex += n);
+}
+
+function currentSlide(n) {
+    showSlides(slideIndex = n);
+}
+
+function showSlides(n) {
+    let i;
+    let slides = document.getElementsByClassName("mySlides");
+    let dots = document.getElementsByClassName("dot");
+    if (n > slides.length) {
+        slideIndex = 1
+    }
+    if (n < 1) {
+        slideIndex = slides.length
+    }
+    for (i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+    }
+    for (i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+    }
+    slides[slideIndex - 1].style.display = "block";
+    dots[slideIndex - 1].className += " active";
+}
+
+// Auto slideshow
+let autoSlideIndex = 0;
+autoShowSlides();
+
+function autoShowSlides() {
+    let i;
+    let slides = document.getElementsByClassName("mySlides");
+    let dots = document.getElementsByClassName("dot");
+    for (i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+    }
+    for (i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+    }
+    autoSlideIndex++;
+    if (autoSlideIndex > slides.length) {
+        autoSlideIndex = 1
+    }
+    slides[autoSlideIndex - 1].style.display = "block";
+    dots[autoSlideIndex - 1].className += " active";
+    setTimeout(autoShowSlides, 5000); // Change image every 5 seconds
+}
+// Get the modal
+const quickViewModal = document.getElementById('quick-view-modal');
+// Get the <span> element that closes the modal
+const closeButton = quickViewModal.querySelector('.close-button');
+// Get all "Quick View" buttons
+const quickViewButtons = document.querySelectorAll('.quick-view');
+
+// Get elements within the modal to update
+const modalProductImg = document.getElementById('modal-product-img');
+const modalProductName = document.getElementById('modal-product-name');
+const modalProductPrice = document.getElementById('modal-product-price');
+// Add more if you add more details to your modal HTML
+const modalProductDescription = quickViewModal.querySelector('.modal-product-description');
+
+
+// Function to open the quick view modal
+function openQuickView(product) {
+    modalProductImg.src = product.image;
+    modalProductImg.alt = product.name;
+    modalProductName.textContent = product.name;
+    modalProductPrice.textContent = product.price;
+    // Update other details if you have them
+    // For demonstration, let's assume a generic description
+    modalProductDescription.textContent = "Discover the latest fashion trends and express your unique style with this premium quality item. Perfect for any occasion.";
+
+
+    quickViewModal.style.display = 'flex'; // Make the modal visible
+    document.body.style.overflow = 'hidden'; // Prevent scrolling of the background
+}
+
+// Function to close the quick view modal
+function closeQuickView() {
+    quickViewModal.style.display = 'none'; // Hide the modal
+    document.body.style.overflow = ''; // Restore scrolling
+}
+
+// Event listeners for "Quick View" buttons
+quickViewButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+        // Prevent default button action (e.g., navigating if it were a link)
+        event.preventDefault();
+
+        // Get the parent product card element
+        const productCard = event.target.closest('.product-card');
+
+        // Extract product details from the product card
+        const productName = productCard.querySelector('.product-name').textContent;
+        const productPrice = productCard.querySelector('.product-price').textContent;
+        const productImage = productCard.querySelector('.product-image img').src;
+
+        // Create a product object
+        const productDetails = {
+            name: productName,
+            price: productPrice,
+            image: productImage
+        };
+
+        openQuickView(productDetails);
+    });
+});
+
+// Event listener to close the modal when the close button is clicked
+closeButton.addEventListener('click', closeQuickView);
+
+// Event listener to close the modal when clicking outside the modal content
+window.addEventListener('click', (event) => {
+    if (event.target === quickViewModal) {
+        closeQuickView();
+    }
+});
+
+// (Optional) Add keyboard support to close with 'Escape' key
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && quickViewModal.style.display === 'flex') {
+        closeQuickView();
+    }
+});
